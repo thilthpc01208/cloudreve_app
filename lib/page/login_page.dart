@@ -105,8 +105,7 @@ class _LoginPage extends State<LoginPage> with SingleTickerProviderStateMixin {
       _captchaTicket = '';
       _captchaError = '';
       _captchaLoading = false;
-      _useAnotherAccount =
-          restoredUseAnother ||
+      _useAnotherAccount = restoredUseAnother ||
           restoredStep != _LoginStep.email ||
           restoredEmail.trim().isNotEmpty;
       _emailController.text = restoredEmail;
@@ -225,10 +224,9 @@ class _LoginPage extends State<LoginPage> with SingleTickerProviderStateMixin {
   Color get _buttonFg =>
       _isDark ? const Color(0xFF14253A) : const Color(0xFF11263F);
   static const double _captchaBaseWidth = 304;
-  static const Duration _hoverTransitionDuration =
-      Duration(milliseconds: 150);
+  static const Duration _hoverTransitionDuration = Duration(milliseconds: 80);
   static const Curve _hoverTransitionCurve = Cubic(0.4, 0, 0.2, 1);
-  static const double _iconRippleRadius = 20;
+  static const double _iconRippleRadius = 16;
 
   Future<void> _loadCaptchaConfig() async {
     if (mounted) {
@@ -550,11 +548,11 @@ class _LoginPage extends State<LoginPage> with SingleTickerProviderStateMixin {
           child: Material(
             type: MaterialType.transparency,
             shape: const CircleBorder(),
-              child: IconButton(
+            child: IconButton(
               key: _languageButtonKey,
               tooltip: null,
-              splashColor:
-                  (_isDark ? Colors.white : Colors.black).withValues(alpha: 0.07),
+              splashColor: (_isDark ? Colors.white : Colors.black)
+                  .withValues(alpha: 0.05),
               highlightColor: Colors.transparent,
               style: IconButton.styleFrom(
                 hoverColor: Colors.transparent,
@@ -567,9 +565,11 @@ class _LoginPage extends State<LoginPage> with SingleTickerProviderStateMixin {
                 final buttonContext = _languageButtonKey.currentContext;
                 if (buttonContext == null) return;
 
-                final buttonBox = buttonContext.findRenderObject() as RenderBox?;
-                final overlayBox =
-                    Overlay.of(context).context.findRenderObject() as RenderBox?;
+                final buttonBox =
+                    buttonContext.findRenderObject() as RenderBox?;
+                final overlayBox = Overlay.of(context)
+                    .context
+                    .findRenderObject() as RenderBox?;
                 if (buttonBox == null || overlayBox == null) return;
 
                 final buttonRect = Rect.fromPoints(
@@ -593,7 +593,8 @@ class _LoginPage extends State<LoginPage> with SingleTickerProviderStateMixin {
                 var left = buttonRect.right - menuWidth + 8.0;
                 left = left.clamp(12.0, maxLeft);
 
-                final spaceBelow = (screenSize.height - buttonRect.bottom - 12.0);
+                final spaceBelow =
+                    (screenSize.height - buttonRect.bottom - 12.0);
                 final spaceAbove = (buttonRect.top - 12.0);
                 final openBelow = spaceBelow >= 180.0 ||
                     (spaceBelow >= spaceAbove && spaceBelow > 0);
@@ -638,7 +639,8 @@ class _LoginPage extends State<LoginPage> with SingleTickerProviderStateMixin {
                           child: Row(
                             children: [
                               Icon(
-                                currentTag.toLowerCase() == lang.code.toLowerCase()
+                                currentTag.toLowerCase() ==
+                                        lang.code.toLowerCase()
                                     ? Icons.check
                                     : Icons.language,
                                 size: 16,
@@ -1060,8 +1062,7 @@ class _LoginPage extends State<LoginPage> with SingleTickerProviderStateMixin {
                 child: AnimatedContainer(
                   duration: _hoverTransitionDuration,
                   curve: _hoverTransitionCurve,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8.5, vertical: 8),
+                  padding: EdgeInsets.zero,
                   decoration: BoxDecoration(
                     color: isHovered
                         ? (_isDark
@@ -1070,187 +1071,221 @@ class _LoginPage extends State<LoginPage> with SingleTickerProviderStateMixin {
                         : Colors.transparent,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Material(
-                    type: MaterialType.transparency,
-                    borderRadius: BorderRadius.circular(12),
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(12),
-                      mouseCursor: SystemMouseCursors.click,
-                      onTap: () => _selectRememberedAccount(account),
-                      splashFactory: InkSplash.splashFactory,
-                      splashColor: (_isDark ? Colors.white : Colors.black)
-                          .withValues(alpha: 0.045),
-                      highlightColor: Colors.transparent,
-                      hoverColor: Colors.transparent,
-                      child: Row(
-                        children: [
-                          CircleAvatar(
-                            radius: 16.5,
-                            backgroundColor: const Color(0xFF2A3443),
-                            child: ClipOval(
-                              child: Image.network(
-                                avatarUrl,
-                                width: 32,
-                                height: 32,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => Image.network(
-                                  fallbackAvatarUrl,
-                                  width: 32,
-                                  height: 32,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) => Text(
-                                    account.nickname.isEmpty
-                                        ? '?'
-                                        : account.nickname[0].toUpperCase(),
+                  child: Stack(
+                    alignment: Alignment.centerRight,
+                    children: [
+                      Positioned.fill(
+                        child: Material(
+                          type: MaterialType.transparency,
+                          borderRadius: BorderRadius.circular(12),
+                          clipBehavior: Clip.antiAlias,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            mouseCursor: SystemMouseCursors.click,
+                            onTap: () => _selectRememberedAccount(account),
+                            splashFactory: InkSplash.splashFactory,
+                            splashColor: (_isDark ? Colors.white : Colors.black)
+                                .withValues(alpha: 0.032),
+                            highlightColor: Colors.transparent,
+                            hoverColor: Colors.transparent,
+                            child: const SizedBox.expand(),
+                          ),
+                        ),
+                      ),
+                      IgnorePointer(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(8.5, 8, 50.5, 8),
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 16.5,
+                                backgroundColor: const Color(0xFF2A3443),
+                                child: ClipOval(
+                                  child: Image.network(
+                                    avatarUrl,
+                                    width: 32,
+                                    height: 32,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => Image.network(
+                                      fallbackAvatarUrl,
+                                      width: 32,
+                                      height: 32,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) => Text(
+                                        account.nickname.isEmpty
+                                            ? '?'
+                                            : account.nickname[0].toUpperCase(),
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Flexible(
-                                      child: Text(
-                                        account.nickname,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          color: _titleColor,
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 16.2,
-                                          height: 1.22,
-                                          letterSpacing: 0,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8.5,
-                                        vertical: 2.5,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: _isDark
-                                            ? const Color(0xFF5A5A5A)
-                                            : const Color(0xFFE7E7E7),
-                                        borderRadius: BorderRadius.circular(999),
-                                      ),
-                                      child: Text(
-                                        _logoutBadgeLabel(
-                                          _trAny(
-                                            const [
-                                              'login.loggedOutBadge',
-                                              'login.loggedOut',
-                                              'login.logout',
-                                            ],
-                                            l10n.loggedOut,
+                                    Row(
+                                      children: [
+                                        Flexible(
+                                          child: Text(
+                                            account.nickname,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              color: _titleColor,
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 16.2,
+                                              height: 1.22,
+                                              letterSpacing: 0,
+                                            ),
                                           ),
                                         ),
-                                        style: TextStyle(
-                                          color: _isDark
-                                              ? const Color(0xFFF2F2F2)
-                                              : const Color(0xFF4E4E4E),
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: 10.2,
-                                          height: 1.12,
-                                          letterSpacing: 0,
+                                        const SizedBox(width: 6),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8.5,
+                                            vertical: 2.5,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: _isDark
+                                                ? const Color(0xFF5A5A5A)
+                                                : const Color(0xFFE7E7E7),
+                                            borderRadius:
+                                                BorderRadius.circular(999),
+                                          ),
+                                          child: Text(
+                                            _logoutBadgeLabel(
+                                              _trAny(
+                                                const [
+                                                  'login.loggedOutBadge',
+                                                  'login.loggedOut',
+                                                  'login.logout',
+                                                ],
+                                                l10n.loggedOut,
+                                              ),
+                                            ),
+                                            style: TextStyle(
+                                              color: _isDark
+                                                  ? const Color(0xFFF2F2F2)
+                                                  : const Color(0xFF4E4E4E),
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 10.2,
+                                              height: 1.12,
+                                              letterSpacing: 0,
+                                            ),
+                                          ),
                                         ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      account.email,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: _hintColor.withValues(
+                                          alpha: _isDark ? 0.92 : 0.9,
+                                        ),
+                                        fontSize: 13.9,
+                                        height: 1.2,
                                       ),
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 3),
-                                Text(
-                                  account.email,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: _hintColor.withValues(
-                                      alpha: _isDark ? 0.92 : 0.9,
-                                    ),
-                                    fontSize: 13.9,
-                                    height: 1.2,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          _webLikeTooltip(
-                            message: _trAny(
-                              const [
-                                'login.logout',
-                                'setting.delete',
-                                'fileManager.delete',
-                                'delete',
-                                'login.removeAccount',
-                                'login.deleteAccount',
-                              ],
-                              l10n.removeAccount,
-                            ),
-                            verticalOffset: 25,
-                            child: AnimatedContainer(
-                              duration: _hoverTransitionDuration,
-                              curve: _hoverTransitionCurve,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: isDeleteHovered
-                                    ? (_isDark
-                                        ? const Color(0xFF3A3B40)
-                                        : const Color(0x1A000000))
-                                    : Colors.transparent,
                               ),
-                              child: Material(
-                                type: MaterialType.transparency,
-                                shape: const CircleBorder(),
-                                child: IconButton(
-                                  tooltip: null,
-                                  mouseCursor: SystemMouseCursors.click,
-                                  splashColor:
-                                      (_isDark ? Colors.white : Colors.black)
-                                          .withValues(alpha: 0.07),
-                                  highlightColor: Colors.transparent,
-                                  onHover: (hovering) {
-                                    if (hovering) {
-                                      if (_hoveredRememberedDeleteAccountId ==
-                                          account.id) {
-                                        return;
-                                      }
-                                      setState(() {
-                                        _hoveredRememberedDeleteAccountId =
-                                            account.id;
-                                      });
-                                      return;
-                                    }
-                                    if (_hoveredRememberedDeleteAccountId !=
+                            ],
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        right: 8.5,
+                        child: _webLikeTooltip(
+                          message: _trAny(
+                            const [
+                              'login.logout',
+                              'setting.delete',
+                              'fileManager.delete',
+                              'delete',
+                              'login.removeAccount',
+                              'login.deleteAccount',
+                            ],
+                            l10n.removeAccount,
+                          ),
+                          verticalOffset: 30,
+                          child: AnimatedContainer(
+                            duration: _hoverTransitionDuration,
+                            curve: _hoverTransitionCurve,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: isDeleteHovered
+                                  ? (_isDark
+                                      ? const Color(0xFF3A3B40)
+                                      : const Color(0x1A000000))
+                                  : Colors.transparent,
+                            ),
+                            child: Material(
+                              type: MaterialType.transparency,
+                              shape: const CircleBorder(),
+                              child: IconButton(
+                                tooltip: null,
+                                mouseCursor: SystemMouseCursors.click,
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints.tightFor(
+                                  width: 40,
+                                  height: 40,
+                                ),
+                                splashColor:
+                                    (_isDark ? Colors.white : Colors.black)
+                                        .withValues(alpha: 0.05),
+                                highlightColor: Colors.transparent,
+                                onHover: (hovering) {
+                                  if (hovering) {
+                                    if (_hoveredRememberedDeleteAccountId ==
                                         account.id) {
                                       return;
                                     }
                                     setState(() {
-                                      _hoveredRememberedDeleteAccountId = '';
+                                      _hoveredRememberedDeleteAccountId =
+                                          account.id;
                                     });
-                                  },
-                                  onPressed: () =>
-                                      _removeRememberedAccount(account),
-                                  style: IconButton.styleFrom(
-                                    foregroundColor: _hintColor,
-                                    hoverColor: Colors.transparent,
-                                    splashFactory: InkSplash.splashFactory,
+                                    return;
+                                  }
+                                  if (_hoveredRememberedDeleteAccountId !=
+                                      account.id) {
+                                    return;
+                                  }
+                                  setState(() {
+                                    _hoveredRememberedDeleteAccountId = '';
+                                  });
+                                },
+                                onPressed: () =>
+                                    _removeRememberedAccount(account),
+                                style: ButtonStyle(
+                                  foregroundColor:
+                                      WidgetStatePropertyAll(_hintColor),
+                                  overlayColor: WidgetStateProperty.resolveWith(
+                                    (states) {
+                                      if (states.contains(WidgetState.pressed)) {
+                                        return (_isDark
+                                                ? Colors.white
+                                                : Colors.black)
+                                            .withValues(alpha: 0.05);
+                                      }
+                                      return Colors.transparent;
+                                    },
                                   ),
-                                  splashRadius: _iconRippleRadius,
-                                  icon: const Icon(Icons.delete_outline, size: 22),
+                                  splashFactory: InkSplash.splashFactory,
                                 ),
+                                splashRadius: _iconRippleRadius,
+                                icon:
+                                    const Icon(Icons.delete_outline, size: 22),
                               ),
                             ),
                           ),
-                        ],
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ),
               ),
@@ -1275,79 +1310,83 @@ class _LoginPage extends State<LoginPage> with SingleTickerProviderStateMixin {
               });
             },
             child: AnimatedContainer(
-                duration: _hoverTransitionDuration,
-                curve: _hoverTransitionCurve,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8.5, vertical: 8),
-                decoration: BoxDecoration(
-                  color: _hoverUseAnotherAccount
-                      ? (_isDark
-                          ? const Color(0xFF2E2F33)
-                          : const Color(0x1F000000))
-                      : Colors.transparent,
+              duration: _hoverTransitionDuration,
+              curve: _hoverTransitionCurve,
+              padding: EdgeInsets.zero,
+              decoration: BoxDecoration(
+                color: _hoverUseAnotherAccount
+                    ? (_isDark
+                        ? const Color(0xFF2E2F33)
+                        : const Color(0x1F000000))
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Material(
+                type: MaterialType.transparency,
+                borderRadius: BorderRadius.circular(12),
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
                   borderRadius: BorderRadius.circular(12),
-                ),
-                child: Material(
-                  type: MaterialType.transparency,
-                  borderRadius: BorderRadius.circular(12),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(12),
-                    mouseCursor: SystemMouseCursors.click,
-                    splashFactory: InkSplash.splashFactory,
-                    splashColor:
-                        (_isDark ? Colors.white : Colors.black).withValues(
-                      alpha: 0.045,
-                    ),
-                    highlightColor: Colors.transparent,
-                    hoverColor: Colors.transparent,
-                    onTap: () {
-                      setState(() {
-                        _useAnotherAccount = true;
-                        _checkedEmail = '';
-                        _emailController.clear();
-                      });
-                      _playStepMotion();
-                      _persistLoginDraft();
-                    },
+                  mouseCursor: SystemMouseCursors.click,
+                  splashFactory: InkSplash.splashFactory,
+                  splashColor:
+                      (_isDark ? Colors.white : Colors.black).withValues(
+                    alpha: 0.032,
+                  ),
+                  highlightColor: Colors.transparent,
+                  hoverColor: Colors.transparent,
+                  onTap: () {
+                    setState(() {
+                      _useAnotherAccount = true;
+                      _checkedEmail = '';
+                      _emailController.clear();
+                    });
+                    _playStepMotion();
+                    _persistLoginDraft();
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(8.5, 8, 8.5, 8),
                     child: Row(
                       children: [
-                    Container(
-                      width: 34,
-                      height: 34,
-                      decoration: BoxDecoration(
-                        color: _isDark ? Colors.white : const Color(0xFF121212),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.add,
-                        size: 23,
-                        color:
-                            _isDark ? const Color(0xFF121212) : Colors.white,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        _trAny(
-                          const [
-                            'login.useOtherAccount',
-                            'login.useAnotherAccount',
-                          ],
-                          l10n.useAnotherAccount,
+                        Container(
+                          width: 34,
+                          height: 34,
+                          decoration: BoxDecoration(
+                            color:
+                                _isDark ? Colors.white : const Color(0xFF121212),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.add,
+                            size: 23,
+                            color:
+                                _isDark ? const Color(0xFF121212) : Colors.white,
+                          ),
                         ),
-                        style: TextStyle(
-                          color: _titleColor,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 16.8,
-                          height: 1.2,
-                          letterSpacing: 0,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            _trAny(
+                              const [
+                                'login.useOtherAccount',
+                                'login.useAnotherAccount',
+                              ],
+                              l10n.useAnotherAccount,
+                            ),
+                            style: TextStyle(
+                              color: _titleColor,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 16.8,
+                              height: 1.2,
+                              letterSpacing: 0,
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
                       ],
                     ),
                   ),
                 ),
+              ),
             ),
           ),
         ),
