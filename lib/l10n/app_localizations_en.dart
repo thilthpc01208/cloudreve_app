@@ -122,8 +122,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get captchaRequired => 'Captcha is required.';
 
   @override
-  String get completeCaptchaVerification =>
-      'Please complete captcha verification.';
+  String get completeCaptchaVerification => 'Please complete captcha verification.';
 
   @override
   String get cloudflareTurnstile => 'Cloudflare Turnstile';
@@ -138,8 +137,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get unableToVerifyAccount => 'Unable to verify account';
 
   @override
-  String get passwordSignInNotSupported =>
-      'This account does not support password sign-in.';
+  String get passwordSignInNotSupported => 'This account does not support password sign-in.';
 
   @override
   String get loginFailed => 'Login failed';
@@ -161,6 +159,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get usePasskey => 'Use passkey';
+
+  @override
+  String get chooseAnAccount => 'Choose an account';
+
+  @override
+  String get useAnotherAccount => 'Use another account';
+
+  @override
+  String get removeAccount => 'Remove account';
+
+  @override
+  String get loggedOut => 'Logged out';
 
   @override
   String get termsOfUse => 'Terms of Use';

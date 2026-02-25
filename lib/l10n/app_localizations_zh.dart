@@ -161,6 +161,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get usePasskey => '使用通行密钥';
 
   @override
+  String get chooseAnAccount => '选择一个账户';
+
+  @override
+  String get useAnotherAccount => '使用其他账户';
+
+  @override
+  String get removeAccount => '移除账户';
+
+  @override
+  String get loggedOut => '已退出登录';
+
+  @override
   String get termsOfUse => '使用条款';
 
   @override

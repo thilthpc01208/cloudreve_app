@@ -10,6 +10,7 @@ abstract class Constants {
     "tokenExpireAt": "$appConfigPrefix.tokenExpireAt",
     "loginStepDraft": "$appConfigPrefix.loginStepDraft",
     "loginEmailDraft": "$appConfigPrefix.loginEmailDraft",
+    "loginUseAnotherAccountDraft": "$appConfigPrefix.loginUseAnotherAccountDraft",
     "rememberedAccounts": "$appConfigPrefix.rememberedAccounts",
   };
 

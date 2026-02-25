@@ -107,6 +107,7 @@ class Controller extends GetxController {
   final RxString logoLightUrl = '/static/img/logo_light.svg'.obs;
   final RxString loginStep = 'email'.obs;
   final RxString loginCheckedEmail = ''.obs;
+  final RxBool loginUseAnotherAccount = false.obs;
   final RxList<RememberedAccount> rememberedAccounts =
       <RememberedAccount>[].obs;
 
@@ -287,6 +288,7 @@ class Controller extends GetxController {
   void setLoginDraft({
     required String step,
     String? checkedEmail,
+    bool? useAnotherAccount,
   }) {
     loginStep.value = step;
     storage.setString(Constants.appConfig['loginStepDraft']!, step);
@@ -294,13 +296,22 @@ class Controller extends GetxController {
       loginCheckedEmail.value = checkedEmail;
       storage.setString(Constants.appConfig['loginEmailDraft']!, checkedEmail);
     }
+    if (useAnotherAccount != null) {
+      loginUseAnotherAccount.value = useAnotherAccount;
+      storage.setBool(
+        Constants.appConfig['loginUseAnotherAccountDraft']!,
+        useAnotherAccount,
+      );
+    }
   }
 
   void clearLoginDraft() {
     loginStep.value = 'email';
     loginCheckedEmail.value = '';
+    loginUseAnotherAccount.value = false;
     storage.remove(Constants.appConfig['loginStepDraft']!);
     storage.remove(Constants.appConfig['loginEmailDraft']!);
+    storage.remove(Constants.appConfig['loginUseAnotherAccountDraft']!);
   }
 
   void _loadRememberedAccounts() {

@@ -48,6 +48,10 @@ class _LoginPage extends State<LoginPage> with SingleTickerProviderStateMixin {
   int _turnstileReloadNonce = 0;
   bool _captchaLoading = false;
   bool _useAnotherAccount = false;
+  String _hoveredRememberedAccountId = '';
+  String _hoveredRememberedDeleteAccountId = '';
+  bool _hoverUseAnotherAccount = false;
+  bool _hoverLanguageButton = false;
   Worker? _storageReadyWorker;
   late final AnimationController _entranceController;
   int _motionEpoch = 0;
@@ -70,6 +74,7 @@ class _LoginPage extends State<LoginPage> with SingleTickerProviderStateMixin {
     controller.setLoginDraft(
       step: _stepToStorage(_step),
       checkedEmail: _checkedEmail,
+      useAnotherAccount: _useAnotherAccount,
     );
   }
 
@@ -88,6 +93,7 @@ class _LoginPage extends State<LoginPage> with SingleTickerProviderStateMixin {
     final controller = Get.find<Controller>();
     final restoredStep = _stepFromStorage(controller.loginStep.value);
     final restoredEmail = controller.loginCheckedEmail.value;
+    final restoredUseAnother = controller.loginUseAnotherAccount.value;
 
     if (!mounted) return;
     setState(() {
@@ -100,7 +106,9 @@ class _LoginPage extends State<LoginPage> with SingleTickerProviderStateMixin {
       _captchaError = '';
       _captchaLoading = false;
       _useAnotherAccount =
-          restoredStep != _LoginStep.email || restoredEmail.trim().isNotEmpty;
+          restoredUseAnother ||
+          restoredStep != _LoginStep.email ||
+          restoredEmail.trim().isNotEmpty;
       _emailController.text = restoredEmail;
       _passwordController.clear();
       _captchaCodeController.clear();
@@ -217,6 +225,10 @@ class _LoginPage extends State<LoginPage> with SingleTickerProviderStateMixin {
   Color get _buttonFg =>
       _isDark ? const Color(0xFF14253A) : const Color(0xFF11263F);
   static const double _captchaBaseWidth = 304;
+  static const Duration _hoverTransitionDuration =
+      Duration(milliseconds: 150);
+  static const Curve _hoverTransitionCurve = Cubic(0.4, 0, 0.2, 1);
+  static const double _iconRippleRadius = 20;
 
   Future<void> _loadCaptchaConfig() async {
     if (mounted) {
@@ -376,6 +388,7 @@ class _LoginPage extends State<LoginPage> with SingleTickerProviderStateMixin {
       setState(() {
         _useAnotherAccount = true;
       });
+      _persistLoginDraft();
     }
   }
 
@@ -486,10 +499,17 @@ class _LoginPage extends State<LoginPage> with SingleTickerProviderStateMixin {
         return SizedBox(
           width: double.infinity,
           child: Align(
-            alignment: Alignment.center,
+            alignment: Alignment.centerLeft,
             child: SizedBox(
               width: width,
-              child: child,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: SizedBox(
+                  width: _captchaBaseWidth,
+                  child: child,
+                ),
+              ),
             ),
           ),
         );
@@ -501,110 +521,154 @@ class _LoginPage extends State<LoginPage> with SingleTickerProviderStateMixin {
     final currentTag = controller.cloudreveLanguageTag;
     final tooltip =
         _tr('login.switchLanguage', AppLocalizations.of(context)!.language);
-    return IconButton(
-      key: _languageButtonKey,
-      tooltip: tooltip,
-      icon: Icon(Icons.translate, color: _titleColor),
-      onPressed: () async {
-        final buttonContext = _languageButtonKey.currentContext;
-        if (buttonContext == null) return;
-
-        final buttonBox = buttonContext.findRenderObject() as RenderBox?;
-        final overlayBox =
-            Overlay.of(context).context.findRenderObject() as RenderBox?;
-        if (buttonBox == null || overlayBox == null) return;
-
-        final buttonRect = Rect.fromPoints(
-          buttonBox.localToGlobal(Offset.zero, ancestor: overlayBox),
-          buttonBox.localToGlobal(
-            buttonBox.size.bottomRight(Offset.zero),
-            ancestor: overlayBox,
+    return _webLikeTooltip(
+      message: tooltip,
+      verticalOffset: 27,
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        onEnter: (_) {
+          if (_hoverLanguageButton) return;
+          setState(() {
+            _hoverLanguageButton = true;
+          });
+        },
+        onExit: (_) {
+          if (!_hoverLanguageButton) return;
+          setState(() {
+            _hoverLanguageButton = false;
+          });
+        },
+        child: AnimatedContainer(
+          duration: _hoverTransitionDuration,
+          curve: _hoverTransitionCurve,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: _hoverLanguageButton
+                ? (_isDark ? const Color(0xFF3A3B40) : const Color(0x1A000000))
+                : Colors.transparent,
           ),
-        );
+          child: Material(
+            type: MaterialType.transparency,
+            shape: const CircleBorder(),
+              child: IconButton(
+              key: _languageButtonKey,
+              tooltip: null,
+              splashColor:
+                  (_isDark ? Colors.white : Colors.black).withValues(alpha: 0.07),
+              highlightColor: Colors.transparent,
+              style: IconButton.styleFrom(
+                hoverColor: Colors.transparent,
+                splashFactory: InkSplash.splashFactory,
+              ),
+              splashRadius: _iconRippleRadius,
+              mouseCursor: SystemMouseCursors.click,
+              icon: Icon(Icons.translate, color: _titleColor),
+              onPressed: () async {
+                final buttonContext = _languageButtonKey.currentContext;
+                if (buttonContext == null) return;
 
-        final screenSize = overlayBox.size;
+                final buttonBox = buttonContext.findRenderObject() as RenderBox?;
+                final overlayBox =
+                    Overlay.of(context).context.findRenderObject() as RenderBox?;
+                if (buttonBox == null || overlayBox == null) return;
 
-        var menuWidth = screenSize.width - 24.0;
-        if (menuWidth > 188.0) menuWidth = 188.0;
-        if (menuWidth < 160.0) menuWidth = 160.0;
-        final menuHeight = (Controller.cloudreveLanguages.length * 36.0) + 12.0;
-
-        final maxLeft =
-            (screenSize.width - menuWidth - 12.0).clamp(12.0, double.infinity);
-        var left = buttonRect.right - menuWidth + 8.0;
-        left = left.clamp(12.0, maxLeft);
-
-        final spaceBelow = (screenSize.height - buttonRect.bottom - 12.0);
-        final spaceAbove = (buttonRect.top - 12.0);
-        final openBelow =
-            spaceBelow >= 180.0 || (spaceBelow >= spaceAbove && spaceBelow > 0);
-        final maxMenuHeight = (openBelow ? spaceBelow : spaceAbove)
-            .clamp(140.0, screenSize.height - 24.0);
-        final actualMenuHeight =
-            (menuHeight <= maxMenuHeight ? menuHeight : maxMenuHeight);
-
-        final maxTop = (screenSize.height - actualMenuHeight - 12.0)
-            .clamp(12.0, double.infinity);
-        var top = openBelow
-            ? buttonRect.bottom + 6.0
-            : buttonRect.top - actualMenuHeight - 6.0;
-        top = top.clamp(12.0, maxTop);
-
-        final selected = await showMenu<String>(
-          context: context,
-          color: _inputBg,
-          elevation: 6,
-          shadowColor: const Color(0x33000000),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          position: RelativeRect.fromLTRB(
-            left,
-            top,
-            (screenSize.width - left - menuWidth).clamp(0.0, screenSize.width),
-            (screenSize.height - top - actualMenuHeight)
-                .clamp(0.0, screenSize.height),
-          ),
-          constraints: BoxConstraints(
-            minWidth: menuWidth,
-            maxWidth: menuWidth,
-            maxHeight: maxMenuHeight,
-          ),
-          items: Controller.cloudreveLanguages
-              .map(
-                (lang) => PopupMenuItem<String>(
-                  value: lang.code,
-                  height: 36,
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  child: Row(
-                    children: [
-                      Icon(
-                        currentTag.toLowerCase() == lang.code.toLowerCase()
-                            ? Icons.check
-                            : Icons.language,
-                        size: 16,
-                        color:
-                            currentTag.toLowerCase() == lang.code.toLowerCase()
-                                ? const Color(0xFF87C8FF)
-                                : _titleColor,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        lang.displayName,
-                        style: TextStyle(color: _titleColor),
-                      ),
-                    ],
+                final buttonRect = Rect.fromPoints(
+                  buttonBox.localToGlobal(Offset.zero, ancestor: overlayBox),
+                  buttonBox.localToGlobal(
+                    buttonBox.size.bottomRight(Offset.zero),
+                    ancestor: overlayBox,
                   ),
-                ),
-              )
-              .toList(),
-        );
+                );
 
-        if (selected != null) {
-          _persistLoginDraft();
-          controller.setPreferredLanguageTag(selected);
-          if (mounted) setState(() {});
-        }
-      },
+                final screenSize = overlayBox.size;
+
+                var menuWidth = screenSize.width - 24.0;
+                if (menuWidth > 188.0) menuWidth = 188.0;
+                if (menuWidth < 160.0) menuWidth = 160.0;
+                final menuHeight =
+                    (Controller.cloudreveLanguages.length * 36.0) + 12.0;
+
+                final maxLeft = (screenSize.width - menuWidth - 12.0)
+                    .clamp(12.0, double.infinity);
+                var left = buttonRect.right - menuWidth + 8.0;
+                left = left.clamp(12.0, maxLeft);
+
+                final spaceBelow = (screenSize.height - buttonRect.bottom - 12.0);
+                final spaceAbove = (buttonRect.top - 12.0);
+                final openBelow = spaceBelow >= 180.0 ||
+                    (spaceBelow >= spaceAbove && spaceBelow > 0);
+                final maxMenuHeight = (openBelow ? spaceBelow : spaceAbove)
+                    .clamp(140.0, screenSize.height - 24.0);
+                final actualMenuHeight =
+                    (menuHeight <= maxMenuHeight ? menuHeight : maxMenuHeight);
+
+                final maxTop = (screenSize.height - actualMenuHeight - 12.0)
+                    .clamp(12.0, double.infinity);
+                var top = openBelow
+                    ? buttonRect.bottom + 6.0
+                    : buttonRect.top - actualMenuHeight - 6.0;
+                top = top.clamp(12.0, maxTop);
+
+                final selected = await showMenu<String>(
+                  context: context,
+                  color: _inputBg,
+                  elevation: 6,
+                  shadowColor: const Color(0x33000000),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
+                  position: RelativeRect.fromLTRB(
+                    left,
+                    top,
+                    (screenSize.width - left - menuWidth)
+                        .clamp(0.0, screenSize.width),
+                    (screenSize.height - top - actualMenuHeight)
+                        .clamp(0.0, screenSize.height),
+                  ),
+                  constraints: BoxConstraints(
+                    minWidth: menuWidth,
+                    maxWidth: menuWidth,
+                    maxHeight: maxMenuHeight,
+                  ),
+                  items: Controller.cloudreveLanguages
+                      .map(
+                        (lang) => PopupMenuItem<String>(
+                          value: lang.code,
+                          height: 36,
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          child: Row(
+                            children: [
+                              Icon(
+                                currentTag.toLowerCase() == lang.code.toLowerCase()
+                                    ? Icons.check
+                                    : Icons.language,
+                                size: 16,
+                                color: currentTag.toLowerCase() ==
+                                        lang.code.toLowerCase()
+                                    ? const Color(0xFF87C8FF)
+                                    : _titleColor,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                lang.displayName,
+                                style: TextStyle(color: _titleColor),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                      .toList(),
+                );
+
+                if (selected != null) {
+                  _persistLoginDraft();
+                  controller.setPreferredLanguageTag(selected);
+                  if (mounted) setState(() {});
+                }
+              },
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -950,92 +1014,415 @@ class _LoginPage extends State<LoginPage> with SingleTickerProviderStateMixin {
         _staggered(
           index: 0,
           child: Text(
-            _tr('login.chooseAccount', 'Choose an account'),
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: _titleColor,
-                  fontWeight: FontWeight.w700,
-                ),
+            _trAny(
+              const ['login.selectAccountToUse', 'login.chooseAccount'],
+              l10n.chooseAnAccount,
+            ),
+            style: TextStyle(
+              color: _titleColor,
+              fontWeight: FontWeight.w700,
+              fontSize: 20,
+              height: 1.25,
+              letterSpacing: 0,
+            ),
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
         ...remembered.asMap().entries.map((entry) {
           final account = entry.value;
-          final avatarUrl = ApiConfig.resolveUrl(account.avatar);
-          final hasAvatar = avatarUrl.isNotEmpty &&
-              (avatarUrl.startsWith('http://') ||
-                  avatarUrl.startsWith('https://'));
+          final isDeleteHovered =
+              _hoveredRememberedDeleteAccountId == account.id;
+          final isHovered =
+              _hoveredRememberedAccountId == account.id && !isDeleteHovered;
+          final avatarUrl = _rememberedAvatarUrl(account);
+          final fallbackAvatarUrl = ApiConfig.resolveUrl(account.avatar);
           return _staggered(
             index: 1 + entry.key,
-            child: Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              decoration: BoxDecoration(
-                color: _inputBg,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: _inputBorder),
-              ),
-              child: ListTile(
-                dense: true,
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-                onTap: () => _selectRememberedAccount(account),
-                leading: CircleAvatar(
-                  radius: 16,
-                  backgroundColor: const Color(0xFF2A3443),
-                  child: ClipOval(
-                    child: hasAvatar
-                        ? Image.network(
-                            avatarUrl,
-                            width: 32,
-                            height: 32,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Text(
-                                account.nickname.isEmpty
-                                    ? '?'
-                                    : account.nickname[0]),
-                          )
-                        : Text(account.nickname.isEmpty
-                            ? '?'
-                            : account.nickname[0]),
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: MouseRegion(
+                cursor: SystemMouseCursors.click,
+                onEnter: (_) {
+                  if (_hoveredRememberedAccountId == account.id) return;
+                  setState(() {
+                    _hoveredRememberedAccountId = account.id;
+                  });
+                },
+                onExit: (_) {
+                  if (_hoveredRememberedAccountId != account.id) return;
+                  setState(() {
+                    _hoveredRememberedAccountId = '';
+                    if (_hoveredRememberedDeleteAccountId == account.id) {
+                      _hoveredRememberedDeleteAccountId = '';
+                    }
+                  });
+                },
+                child: AnimatedContainer(
+                  duration: _hoverTransitionDuration,
+                  curve: _hoverTransitionCurve,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8.5, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: isHovered
+                        ? (_isDark
+                            ? const Color(0xFF2E2F33)
+                            : const Color(0x1F000000))
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                ),
-                title: Text(
-                  account.nickname,
-                  style: TextStyle(
-                      color: _titleColor, fontWeight: FontWeight.w600),
-                ),
-                subtitle: Text(
-                  account.email,
-                  style: TextStyle(color: _hintColor),
-                ),
-                trailing: IconButton(
-                  tooltip: _tr('login.deleteAccount', 'Remove account'),
-                  onPressed: () => _removeRememberedAccount(account),
-                  icon: Icon(Icons.delete_outline, color: _hintColor),
+                  child: Material(
+                    type: MaterialType.transparency,
+                    borderRadius: BorderRadius.circular(12),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      mouseCursor: SystemMouseCursors.click,
+                      onTap: () => _selectRememberedAccount(account),
+                      splashFactory: InkSplash.splashFactory,
+                      splashColor: (_isDark ? Colors.white : Colors.black)
+                          .withValues(alpha: 0.045),
+                      highlightColor: Colors.transparent,
+                      hoverColor: Colors.transparent,
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 16.5,
+                            backgroundColor: const Color(0xFF2A3443),
+                            child: ClipOval(
+                              child: Image.network(
+                                avatarUrl,
+                                width: 32,
+                                height: 32,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => Image.network(
+                                  fallbackAvatarUrl,
+                                  width: 32,
+                                  height: 32,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => Text(
+                                    account.nickname.isEmpty
+                                        ? '?'
+                                        : account.nickname[0].toUpperCase(),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        account.nickname,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          color: _titleColor,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 16.2,
+                                          height: 1.22,
+                                          letterSpacing: 0,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8.5,
+                                        vertical: 2.5,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: _isDark
+                                            ? const Color(0xFF5A5A5A)
+                                            : const Color(0xFFE7E7E7),
+                                        borderRadius: BorderRadius.circular(999),
+                                      ),
+                                      child: Text(
+                                        _logoutBadgeLabel(
+                                          _trAny(
+                                            const [
+                                              'login.loggedOutBadge',
+                                              'login.loggedOut',
+                                              'login.logout',
+                                            ],
+                                            l10n.loggedOut,
+                                          ),
+                                        ),
+                                        style: TextStyle(
+                                          color: _isDark
+                                              ? const Color(0xFFF2F2F2)
+                                              : const Color(0xFF4E4E4E),
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 10.2,
+                                          height: 1.12,
+                                          letterSpacing: 0,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  account.email,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: _hintColor.withValues(
+                                      alpha: _isDark ? 0.92 : 0.9,
+                                    ),
+                                    fontSize: 13.9,
+                                    height: 1.2,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          _webLikeTooltip(
+                            message: _trAny(
+                              const [
+                                'login.logout',
+                                'setting.delete',
+                                'fileManager.delete',
+                                'delete',
+                                'login.removeAccount',
+                                'login.deleteAccount',
+                              ],
+                              l10n.removeAccount,
+                            ),
+                            verticalOffset: 25,
+                            child: AnimatedContainer(
+                              duration: _hoverTransitionDuration,
+                              curve: _hoverTransitionCurve,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: isDeleteHovered
+                                    ? (_isDark
+                                        ? const Color(0xFF3A3B40)
+                                        : const Color(0x1A000000))
+                                    : Colors.transparent,
+                              ),
+                              child: Material(
+                                type: MaterialType.transparency,
+                                shape: const CircleBorder(),
+                                child: IconButton(
+                                  tooltip: null,
+                                  mouseCursor: SystemMouseCursors.click,
+                                  splashColor:
+                                      (_isDark ? Colors.white : Colors.black)
+                                          .withValues(alpha: 0.07),
+                                  highlightColor: Colors.transparent,
+                                  onHover: (hovering) {
+                                    if (hovering) {
+                                      if (_hoveredRememberedDeleteAccountId ==
+                                          account.id) {
+                                        return;
+                                      }
+                                      setState(() {
+                                        _hoveredRememberedDeleteAccountId =
+                                            account.id;
+                                      });
+                                      return;
+                                    }
+                                    if (_hoveredRememberedDeleteAccountId !=
+                                        account.id) {
+                                      return;
+                                    }
+                                    setState(() {
+                                      _hoveredRememberedDeleteAccountId = '';
+                                    });
+                                  },
+                                  onPressed: () =>
+                                      _removeRememberedAccount(account),
+                                  style: IconButton.styleFrom(
+                                    foregroundColor: _hintColor,
+                                    hoverColor: Colors.transparent,
+                                    splashFactory: InkSplash.splashFactory,
+                                  ),
+                                  splashRadius: _iconRippleRadius,
+                                  icon: const Icon(Icons.delete_outline, size: 22),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),
           );
         }),
-        const SizedBox(height: 4),
+        const SizedBox(height: 1),
         _staggered(
           index: 3 + remembered.length,
-          child: TextButton.icon(
-            onPressed: () {
+          child: MouseRegion(
+            cursor: SystemMouseCursors.click,
+            onEnter: (_) {
+              if (_hoverUseAnotherAccount) return;
               setState(() {
-                _useAnotherAccount = true;
-                _checkedEmail = '';
-                _emailController.clear();
+                _hoverUseAnotherAccount = true;
               });
-              _playStepMotion();
             },
-            icon: const Icon(Icons.add_circle_outline),
-            label: Text(_tr('login.useAnotherAccount', 'Use another account')),
-            style: TextButton.styleFrom(
-              foregroundColor: const Color(0xFF87C8FF),
+            onExit: (_) {
+              if (!_hoverUseAnotherAccount) return;
+              setState(() {
+                _hoverUseAnotherAccount = false;
+              });
+            },
+            child: AnimatedContainer(
+                duration: _hoverTransitionDuration,
+                curve: _hoverTransitionCurve,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8.5, vertical: 8),
+                decoration: BoxDecoration(
+                  color: _hoverUseAnotherAccount
+                      ? (_isDark
+                          ? const Color(0xFF2E2F33)
+                          : const Color(0x1F000000))
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Material(
+                  type: MaterialType.transparency,
+                  borderRadius: BorderRadius.circular(12),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    mouseCursor: SystemMouseCursors.click,
+                    splashFactory: InkSplash.splashFactory,
+                    splashColor:
+                        (_isDark ? Colors.white : Colors.black).withValues(
+                      alpha: 0.045,
+                    ),
+                    highlightColor: Colors.transparent,
+                    hoverColor: Colors.transparent,
+                    onTap: () {
+                      setState(() {
+                        _useAnotherAccount = true;
+                        _checkedEmail = '';
+                        _emailController.clear();
+                      });
+                      _playStepMotion();
+                      _persistLoginDraft();
+                    },
+                    child: Row(
+                      children: [
+                    Container(
+                      width: 34,
+                      height: 34,
+                      decoration: BoxDecoration(
+                        color: _isDark ? Colors.white : const Color(0xFF121212),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.add,
+                        size: 23,
+                        color:
+                            _isDark ? const Color(0xFF121212) : Colors.white,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        _trAny(
+                          const [
+                            'login.useOtherAccount',
+                            'login.useAnotherAccount',
+                          ],
+                          l10n.useAnotherAccount,
+                        ),
+                        style: TextStyle(
+                          color: _titleColor,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16.8,
+                          height: 1.2,
+                          letterSpacing: 0,
+                        ),
+                      ),
+                    ),
+                      ],
+                    ),
+                  ),
+                ),
             ),
           ),
         ),
       ],
+    );
+  }
+
+  String _rememberedAvatarUrl(RememberedAccount account) {
+    final byId = ApiConfig.userAvatarUrl(account.id);
+    if (byId.isNotEmpty) return byId;
+    return ApiConfig.resolveUrl(account.avatar);
+  }
+
+  String _logoutBadgeLabel(String source) {
+    final text = source.trim();
+    if (text.isEmpty) return _trAny(const ['login.logout'], 'Logged out');
+
+    final normalized = text.toLowerCase();
+    if (normalized.startsWith('you are signed out')) {
+      return 'Signed out';
+    }
+    if (normalized.startsWith('bạn đã đăng xuất')) {
+      return 'Đã đăng xuất';
+    }
+
+    final compact = text.replaceAll(RegExp(r'[.!?。！？]$'), '').trim();
+    if (compact.length <= 18) return compact;
+
+    final logoutLabel = _trAny(const ['login.logout'], compact).trim();
+    if (logoutLabel.isNotEmpty) return logoutLabel;
+    return compact;
+  }
+
+  Widget _webLikeTooltip({
+    required String message,
+    required Widget child,
+    double verticalOffset = 10,
+  }) {
+    return Tooltip(
+      message: message,
+      waitDuration: const Duration(milliseconds: 380),
+      showDuration: const Duration(milliseconds: 1200),
+      preferBelow: true,
+      textStyle: const TextStyle(
+        color: Colors.white,
+        fontSize: 14,
+        height: 1.43,
+        letterSpacing: 0.01,
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      margin: const EdgeInsets.symmetric(horizontal: 12),
+      verticalOffset: verticalOffset,
+      decoration: BoxDecoration(
+        color: const Color(0xFF313131),
+        borderRadius: BorderRadius.circular(4),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x33000000),
+            blurRadius: 5,
+            spreadRadius: -1,
+            offset: Offset(0, 3),
+          ),
+          BoxShadow(
+            color: Color(0x24000000),
+            blurRadius: 10,
+            offset: Offset(0, 6),
+          ),
+          BoxShadow(
+            color: Color(0x1F000000),
+            blurRadius: 18,
+            offset: Offset(0, 1),
+          ),
+        ],
+      ),
+      child: child,
     );
   }
 
@@ -1235,7 +1622,7 @@ class _LoginPage extends State<LoginPage> with SingleTickerProviderStateMixin {
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(20),
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 336),
+                  constraints: const BoxConstraints(maxWidth: 344),
                   child: TweenAnimationBuilder<double>(
                     tween: Tween<double>(begin: 0, end: 1),
                     duration: const Duration(milliseconds: 300),
@@ -1286,63 +1673,64 @@ class _LoginPage extends State<LoginPage> with SingleTickerProviderStateMixin {
                             _staggered(
                               index: 1,
                               beginY: 12,
-                              child: AnimatedSwitcher(
-                                duration: const Duration(milliseconds: 480),
-                                switchInCurve: Curves.fastOutSlowIn,
-                                switchOutCurve: Curves.fastOutSlowIn,
-                                layoutBuilder:
-                                    (currentChild, previousChildren) {
-                                  return Stack(
-                                    clipBehavior: Clip.hardEdge,
-                                    alignment: Alignment.topCenter,
-                                    children: <Widget>[
-                                      ...previousChildren,
-                                      if (currentChild != null) currentChild,
-                                    ],
-                                  );
-                                },
-                                transitionBuilder: (child, animation) {
-                                  final isOutgoing = animation.status ==
-                                      AnimationStatus.reverse;
-                                  final inFrom = _slideForward ? 1.0 : -1.0;
-                                  final outTo = _slideForward ? -1.0 : 1.0;
-                                  final tween = isOutgoing
-                                      ? Tween<Offset>(
-                                          begin: Offset.zero,
-                                          end: Offset(outTo, 0),
-                                        )
-                                      : Tween<Offset>(
-                                          begin: Offset(inFrom, 0),
-                                          end: Offset.zero,
-                                        );
-                                  final slide = tween.animate(
-                                    CurvedAnimation(
-                                      parent: animation,
-                                      curve: Curves.fastOutSlowIn,
-                                    ),
-                                  );
-                                  return ClipRect(
-                                    child: SlideTransition(
+                              child: ClipRect(
+                                child: AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 480),
+                                  switchInCurve: Curves.fastOutSlowIn,
+                                  switchOutCurve: Curves.fastOutSlowIn,
+                                  layoutBuilder:
+                                      (currentChild, previousChildren) {
+                                    return Stack(
+                                      clipBehavior: Clip.hardEdge,
+                                      alignment: Alignment.topCenter,
+                                      children: <Widget>[
+                                        ...previousChildren,
+                                        if (currentChild != null) currentChild,
+                                      ],
+                                    );
+                                  },
+                                  transitionBuilder: (child, animation) {
+                                    final isOutgoing = animation.status ==
+                                        AnimationStatus.reverse;
+                                    final inFrom = _slideForward ? 1.0 : -1.0;
+                                    final outTo = _slideForward ? -1.0 : 1.0;
+                                    final tween = isOutgoing
+                                        ? Tween<Offset>(
+                                            begin: Offset.zero,
+                                            end: Offset(outTo, 0),
+                                          )
+                                        : Tween<Offset>(
+                                            begin: Offset(inFrom, 0),
+                                            end: Offset.zero,
+                                          );
+                                    final slide = tween.animate(
+                                      CurvedAnimation(
+                                        parent: animation,
+                                        curve: Curves.fastOutSlowIn,
+                                      ),
+                                    );
+                                    return SlideTransition(
                                       position: slide,
                                       child: child,
+                                    );
+                                  },
+                                  child: KeyedSubtree(
+                                    key: ValueKey(
+                                        'step-${_step.name}-${_motionEpoch}'),
+                                    child: Container(
+                                      width: double.infinity,
+                                      color: _cardBackground,
+                                      child: _step == _LoginStep.email
+                                          ? (!_useAnotherAccount &&
+                                                  controller.rememberedAccounts
+                                                      .isNotEmpty
+                                              ? _buildRememberedAccountsStep(
+                                                  l10n)
+                                              : _buildEmailStep(l10n))
+                                          : (_step == _LoginStep.password
+                                              ? _buildPasswordStep(l10n)
+                                              : _buildSignUpStep(l10n)),
                                     ),
-                                  );
-                                },
-                                child: KeyedSubtree(
-                                  key: ValueKey(
-                                      'step-${_step.name}-${_motionEpoch}'),
-                                  child: Container(
-                                    width: double.infinity,
-                                    color: _cardBackground,
-                                    child: _step == _LoginStep.email
-                                        ? (!_useAnotherAccount &&
-                                                controller.rememberedAccounts
-                                                    .isNotEmpty
-                                            ? _buildRememberedAccountsStep(l10n)
-                                            : _buildEmailStep(l10n))
-                                        : (_step == _LoginStep.password
-                                            ? _buildPasswordStep(l10n)
-                                            : _buildSignUpStep(l10n)),
                                   ),
                                 ),
                               ),

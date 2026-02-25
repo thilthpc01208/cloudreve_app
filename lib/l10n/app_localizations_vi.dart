@@ -122,8 +122,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get captchaRequired => 'Cần nhập captcha.';
 
   @override
-  String get completeCaptchaVerification =>
-      'Vui lòng hoàn tất xác minh captcha.';
+  String get completeCaptchaVerification => 'Vui lòng hoàn tất xác minh captcha.';
 
   @override
   String get cloudflareTurnstile => 'Cloudflare Turnstile';
@@ -138,8 +137,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get unableToVerifyAccount => 'Không thể xác minh tài khoản';
 
   @override
-  String get passwordSignInNotSupported =>
-      'Tài khoản này không hỗ trợ đăng nhập bằng mật khẩu.';
+  String get passwordSignInNotSupported => 'Tài khoản này không hỗ trợ đăng nhập bằng mật khẩu.';
 
   @override
   String get loginFailed => 'Đăng nhập thất bại';
@@ -161,6 +159,18 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get usePasskey => 'Dùng mã khóa';
+
+  @override
+  String get chooseAnAccount => 'Chọn tài khoản';
+
+  @override
+  String get useAnotherAccount => 'Dùng tài khoản khác';
+
+  @override
+  String get removeAccount => 'Xóa tài khoản';
+
+  @override
+  String get loggedOut => 'Đã đăng xuất';
 
   @override
   String get termsOfUse => 'Điều khoản sử dụng';

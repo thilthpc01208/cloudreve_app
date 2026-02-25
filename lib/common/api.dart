@@ -101,9 +101,18 @@ abstract class ApiConfig {
     "captcha": "/site/captcha",
     "siteConfig": "/site/config/site",
     "me": "/user/me",
+    "getProfilePicture": "/user/avatar",
+    "updateProfilePicture": "/user/setting/avatar",
     "directory": "/file",
     "fileUrl": "/file/url",
   };
+
+  static String userAvatarUrl(String userId, {bool noCache = true}) {
+    final normalized = userId.trim();
+    if (normalized.isEmpty) return "";
+    final suffix = noCache ? "?nocache=true" : "";
+    return "$baseUrl${apis['getProfilePicture']}/${Uri.encodeComponent(normalized)}$suffix";
+  }
 }
 
 class Api {
